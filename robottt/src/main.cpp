@@ -1,93 +1,193 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
-/*    Author:       PLTW #44                                                  */
-/*    Created:      1/16/2025, 5:18:42 PM                                     */
+/*    Author:       C:\Users\berna                                            */
+/*    Created:      Fri Jan 10 2025                                           */
 /*    Description:  V5 project                                                */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// DigitalOutH          digital_out   H               
+// DigitalOutC          digital_out   C               
+// ---- END VEXCODE CONFIGURED DEVICES ----
 #include "vex.h"
 
 using namespace vex;
 
-// A global instance of competition
 competition Competition;
 
-// define your global instances of motors and other devices here
+// Define motors for the drivetrain
+motor leftMotor1(PORT8, ratio18_1, false);
+motor leftMotor2(PORT9, ratio18_1, false);
+motor leftMotor3(PORT10, ratio18_1, false);
+motor rightMotor1(PORT17, ratio18_1, true);
+motor rightMotor2(PORT18, ratio18_1, true);
+motor rightMotor3(PORT19, ratio18_1, true);
 
-/*---------------------------------------------------------------------------*/
-/*                          Pre-Autonomous Functions                         */
-/*                                                                           */
-/*  You may want to perform some actions before the competition starts.      */
-/*  Do them in the following function.  You must return from this function   */
-/*  or the autonomous and usercontrol tasks will not be started.  This       */
-/*  function is only called once after the V5 has been powered on and        */
-/*  not every time that the robot is disabled.                               */
-/*---------------------------------------------------------------------------*/
 
-void pre_auton(void) {
+// Define the intake motor
+motor intakeMotor(PORT2, ratio18_1, false);
 
-  // All activities that occur before the competition starts
-  // Example: clearing encoders, setting servo positions, ...
+// Define the intake motor
+motor Wheels(PORT3, ratio18_1, false);
+
+//arms
+motor armMotor(PORT1, ratio18_1,true);
+
+
+// Define the target positions for the arm
+int armPositions[4] = {0,160,460,660};
+
+int currentPositionIndex = 0; // Index to track the current position
+
+// Function to move the arm to the target position
+void moveArmToPosition() {
+    int targetPosition = armPositions[currentPositionIndex];
+    armMotor.spinToPosition(targetPosition, degrees, 50, velocityUnits::pct); // Adjust velocity as needed
+}
+ 
+// Group the left and right motors
+motor_group leftDrive(leftMotor1, leftMotor2, leftMotor3);
+motor_group rightDrive(rightMotor1, rightMotor2, rightMotor3);
+
+
+// Define the controller
+controller Controller1;
+
+
+
+
+void extendPiston() {
+    DigitalOutC.set(true);
+}
+void retractPiston() {
+    DigitalOutC.set(false);
 }
 
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/*                              Autonomous Task                              */
-/*                                                                           */
-/*  This task is used to control your robot during the autonomous phase of   */
-/*  a VEX Competition.                                                       */
-/*                                                                           */
-/*  You must modify the code to add your own robot specific commands here.   */
-/*---------------------------------------------------------------------------*/
+void extendPistonH() {
+    DigitalOutH.set(true);
+}
+void retractPistonH() {
+    DigitalOutH.set(false);
+}
+void Autonomous(void) {
+  leftDrive.setVelocity(70,percent);
+  rightDrive.setVelocity(70,percent);
 
-void autonomous(void) {
-  // ..........................................................................
-  // Insert autonomous user code here.
-  // ..........................................................................
+  leftDrive.spinFor(reverse, 1.5, rev, false);
+  rightDrive.spinFor(reverse, 1.5, rev, false);
+
+  wait(2, sec);
+  extendPiston();
+  wait(2, sec);
+ // Set the intake motor to spin at 70% velocity by default
+      intakeMotor.setVelocity(70, percent);
+      intakeMotor.spin(reverse);
 }
 
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/*                              User Control Task                            */
-/*                                                                           */
-/*  This task is used to control your robot during the user control phase of */
-/*  a VEX Competition.                                                       */
-/*                                                                           */
-/*  You must modify the code to add your own robot specific commands here.   */
-/*---------------------------------------------------------------------------*/
+void UserControl(void){
 
-void usercontrol(void) {
-  // User control code here, inside the loop
-  while (1) {
-    // This is the main execution loop for the user control program.
-    // Each time through the loop your program should update motor + servo
-    // values based on feedback from the joysticks.
 
-    // ........................................................................
-    // Insert user code here. This is where you use the joystick values to
-    // update your motors, etc.
-    // ........................................................................
+    
 
-    wait(20, msec); // Sleep the task for a short amount of time to
-                    // prevent wasted resources.
-  }
+      // // Reset the motor's position to zero
+      // armMotor.resetPosition();
+    while(true) {
+      Controller1.ButtonX.pressed(extendPiston);
+      Controller1.ButtonA.pressed(retractPiston);
+      Controller1.ButtonY.pressed(extendPistonH);
+      Controller1.ButtonB.pressed(retractPistonH);
+
+        Wheels.setVelocity(90,percent);
+       //Wheels.spin(reverse);
+
+                // Check if the 'X' button is pressed
+        if (Controller1.ButtonR1.pressing()) {
+            // Increment the position index
+            currentPositionIndex = (currentPositionIndex + 1) % 4; // Cycle through positions
+            moveArmToPosition();
+            wait(0.2, seconds); // Debounce delay
+        }
+
+
+      // Set the intake motor to spin at 70% velocity by default
+      intakeMotor.setVelocity(80, percent);
+      intakeMotor.spin(reverse);
+      
+// Get the joystick values
+        int leftSpeed = Controller1.Axis3.position(percent);
+        int rightSpeed = Controller1.Axis2.position(percent);
+
+        // Set the speed of the left and right motor groups
+
+        
+        leftDrive.spin(forward, leftSpeed, percent);
+        rightDrive.spin(forward, rightSpeed, percent);
+        // Control the intake motor with the 'L2' and 'R2' buttons
+        // if(Controller1.ButtonL2.pressing()) {
+        //     intakeMotor.setVelocity(70,percent);
+        //     intakeMotor.spin(reverse);
+
+        // } else 
+        if(Controller1.ButtonR2.pressing()) {
+            intakeMotor.setVelocity(70,percent);
+            intakeMotor.spin(forward);                                  
+        }
+
+        // Small delay to prevent overloading the CPU
+        wait(20, msec);
+    }
+    
 }
 
-//
-// Main will set up the competition functions and callbacks.
-//
 int main() {
-  // Set up callbacks for autonomous and driver control periods.
-  Competition.autonomous(autonomous);
-  Competition.drivercontrol(usercontrol);
+  Autonomous();
+  UserControl();
+//     Controller1.ButtonX.pressed(extendPiston);
+//     Controller1.ButtonA.pressed(retractPiston);
+//     Controller1.ButtonY.pressed(extendPistonH);
+//     Controller1.ButtonB.pressed(retractPistonH);
 
-  // Run the pre-autonomous function.
-  pre_auton(); 
+    Wheels.setVelocity(90,percent);
+    Wheels.spin(reverse);
 
-  // Prevent main from exiting with an infinite loop.
-  while (true) {
-    wait(1100, msec);
-  }
+//       // Reset the motor's position to zero
+//       armMotor.resetPosition();
+//     while(true) {
+
+//                 // Check if the 'X' button is pressed
+//         if (Controller1.ButtonR1.pressing()) {
+//             // Increment the position index
+//             currentPositionIndex = (currentPositionIndex + 1) % 4; // Cycle through positions
+//             moveArmToPosition();
+//             wait(0.2, seconds); // Debounce delay
+//         }
+
+
+      // Set the intake motor to spin at 70% velocity by default
+      intakeMotor.setVelocity(70, percent);
+      intakeMotor.spin(reverse);
+// Get the joystick values
+        int leftSpeed = Controller1.Axis3.position(percent);
+        int rightSpeed = Controller1.Axis2.position(percent);
+
+        // Set the speed of the left and right motor groups
+        leftDrive.spin(forward, leftSpeed, percent);
+        rightDrive.spin(forward, rightSpeed, percent);
+//         // Control the intake motor with the 'L2' and 'R2' buttons
+//         if(Controller1.ButtonL2.pressing()) {
+//             intakeMotor.setVelocity(70,percent);
+//             intakeMotor.spin(reverse);
+
+//         } else if(Controller1.ButtonR2.pressing()) {
+//             intakeMotor.spin(forward);                                  
+//         }
+//         Wheels.setVelocity(90,percent);
+//         Wheels.spin(reverse);
+//         // Small delay to prevent overloading the CPU
+//         wait(20, msec);
+//     }
 }
