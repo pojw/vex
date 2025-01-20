@@ -1,4 +1,5 @@
 #include "main.h"
+#include "pros/adi.hpp"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 
 // controller
@@ -162,6 +163,17 @@ void autonomous() {
 /**
  * Runs in driver control
  */
+
+// Define the target positions for the arm
+int armPositions[4] = {0,160,460,660};
+
+// Function to move the arm to the target position
+void moveArmToPosition() {
+    int targetPosition = armPositions[currentPositionIndex];
+    armMotor.spinToPosition(targetPosition, degrees, 50, velocityUnits::pct); // Adjust velocity as needed
+}
+ 
+
 void opcontrol() {
     // controller
     // loop to continuously update motors
